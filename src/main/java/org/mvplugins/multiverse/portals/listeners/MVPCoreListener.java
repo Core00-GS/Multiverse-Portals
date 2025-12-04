@@ -22,17 +22,20 @@ import org.bukkit.Location;
 import org.bukkit.event.EventHandler;
 
 import org.mvplugins.multiverse.portals.MultiversePortals;
+import org.mvplugins.multiverse.portals.config.PortalsConfig;
 import org.mvplugins.multiverse.portals.utils.PortalManager;
 
 @Service
-public class MVPCoreListener implements PortalsListener {
+final class MVPCoreListener implements PortalsListener {
     private final MultiversePortals plugin;
+    private final PortalsConfig config;
     private final PortalManager portalManager;
 
     @Inject
-    MVPCoreListener(@NotNull MultiversePortals plugin, @NotNull PortalManager portalManager) {
+    MVPCoreListener(@NotNull MultiversePortals plugin, @NotNull PortalManager portalManager, @NotNull PortalsConfig config) {
         this.plugin = plugin;
         this.portalManager = portalManager;
+        this.config = config;
     }
 
     /**
@@ -73,26 +76,27 @@ public class MVPCoreListener implements PortalsListener {
     public void portalTouchEvent(MVPlayerTouchedPortalEvent event) {
         Logging.finer("Found The TouchedPortal event.");
         Location l = event.getBlockTouched();
-        if (event.canUseThisPortal() && (this.portalManager.isPortal(l))) {
-            if (this.plugin.getPortalSession(event.getPlayer()).isDebugModeOn()) {
-                event.setCancelled(true);
+        if (!event.canUseThisPortal() || (!this.portalManager.isPortal(l))) {
+            return;
+        }
+        if (this.plugin.getPortalSession(event.getPlayer()).isDebugModeOn()) {
+            event.setCancelled(true);
+            return;
+        }
+        // This is a valid portal, and they can use it so far...
+        MVPortal p = this.portalManager.getPortal(event.getPlayer(), l);
+        if (p == null) {
+            // The player can't see this portal, and can't use it.
+            Logging.finer(String.format("'%s' was DENIED access to this portal event.", event.getPlayer().getName()));
+            event.setCanUseThisPortal(false);
+        } else if (p.getDestination() == null) {
+            if (config.getPortalsDefaultToNether()) {
+                Logging.finer("Allowing MVPortal to act as nether portal.");
                 return;
             }
-            // This is a valid portal, and they can use it so far...
-            MVPortal p = this.portalManager.getPortal(event.getPlayer(), l);
-            if (p == null) {
-                // The player can't see this portal, and can't use it.
-                Logging.finer(String.format("'%s' was DENIED access to this portal event.", event.getPlayer().getName()));
-                event.setCanUseThisPortal(false);
-            } else if (p.getDestination() == null) {
-                if (this.plugin.getMainConfig().getBoolean("portalsdefaulttonether", false)) {
-                    Logging.finer("Allowing MVPortal to act as nether portal.");
-                    return;
-                }
-                // They can see it, is it val
-                event.getPlayer().sendMessage("This Multiverse Portal does not have a valid destination!");
-                event.setCanUseThisPortal(false);
-            }
+            // They can see it, is it val
+            event.getPlayer().sendMessage("This Multiverse Portal does not have a valid destination!");
+            event.setCanUseThisPortal(false);
         }
     }
 }
