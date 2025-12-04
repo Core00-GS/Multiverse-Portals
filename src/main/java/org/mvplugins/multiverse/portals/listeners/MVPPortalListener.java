@@ -49,7 +49,7 @@ final class MVPPortalListener implements PortalsListener {
     }
 
     @EventHandler
-    public void playerPortal(PlayerPortalEvent event) {
+    void playerPortal(PlayerPortalEvent event) {
         if (event.isCancelled()) {
             Logging.fine("This Portal event was already cancelled.");
             return;

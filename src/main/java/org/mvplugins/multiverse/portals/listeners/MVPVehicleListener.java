@@ -51,7 +51,7 @@ public final class MVPVehicleListener implements Listener {
     }
 
     @EventHandler
-    public void vehicleMove(VehicleMoveEvent event) {
+    void vehicleMove(VehicleMoveEvent event) {
         Vehicle vehicle = event.getVehicle();
         List<Player> playerPassengers = new ArrayList<>();
         boolean hasNonPlayers = false;

@@ -28,7 +28,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerMoveEvent;
 
 @Service
-final public class MVPPlayerMoveListener implements Listener {
+public final class MVPPlayerMoveListener implements Listener {
 
     private final MultiversePortals plugin;
     private final PortalsConfig portalsConfig;
