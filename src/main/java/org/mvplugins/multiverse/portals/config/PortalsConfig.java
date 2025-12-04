@@ -301,7 +301,7 @@ public final class PortalsConfig {
     }
 
     @ApiStatus.AvailableSince("5.2")
-    public  Try<Void> setTeleportEntities(boolean teleportEntities) {
+    public Try<Void> setTeleportEntities(boolean teleportEntities) {
         return configHandle.set(configNodes.teleportEntities, teleportEntities);
     }
 
