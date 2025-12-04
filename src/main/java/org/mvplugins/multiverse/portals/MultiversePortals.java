@@ -139,8 +139,14 @@ public class MultiversePortals extends MultiverseModule {
         if (portalsConfigProvider.get().getTeleportVehicles()) {
             pluginManager.registerEvents(serviceLocator.getService(MVPVehicleListener.class), this);
         }
+        if (portalsConfigProvider.get().getTeleportEntities()) {
+            pluginManager.registerEvents(serviceLocator.getService(MVPEntityPortalListener.class), this);
+        }
         if (portalsConfigProvider.get().getUseOnMove()) {
             pluginManager.registerEvents(serviceLocator.getService(MVPPlayerMoveListener.class), this);
+            if (portalsConfigProvider.get().getTeleportEntities()) {
+                pluginManager.registerEvents(serviceLocator.getService(MVPEntityMoveListener.class), this);
+            }
         }
     }
 

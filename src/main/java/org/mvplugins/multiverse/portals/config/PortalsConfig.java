@@ -295,6 +295,16 @@ public final class PortalsConfig {
         return configHandle.set(configNodes.teleportVehicles, teleportVehicles);
     }
 
+    @ApiStatus.AvailableSince("5.2")
+    public boolean getTeleportEntities() {
+        return configHandle.get(configNodes.teleportEntities);
+    }
+
+    @ApiStatus.AvailableSince("5.2")
+    public Try<Void> setTeleportEntities(boolean teleportEntities) {
+        return configHandle.set(configNodes.teleportEntities, teleportEntities);
+    }
+
     /**
      *
      * @return

@@ -52,6 +52,9 @@ public final class MVPVehicleListener implements Listener {
 
     @EventHandler
     void vehicleMove(VehicleMoveEvent event) {
+        if (helper.isWithinSameBlock(event.getFrom(), event.getTo())) {
+            return;
+        }
         Vehicle vehicle = event.getVehicle();
         List<Player> playerPassengers = new ArrayList<>();
         boolean hasNonPlayers = false;

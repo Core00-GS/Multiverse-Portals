@@ -10,6 +10,7 @@ import org.jvnet.hk2.annotations.Service;
 import org.mvplugins.multiverse.core.destination.DestinationInstance;
 import org.mvplugins.multiverse.core.teleportation.AsyncSafetyTeleporter;
 import org.mvplugins.multiverse.core.teleportation.BlockSafety;
+import org.mvplugins.multiverse.core.teleportation.PassengerModes;
 import org.mvplugins.multiverse.core.world.WorldManager;
 import org.mvplugins.multiverse.external.jakarta.inject.Inject;
 import org.mvplugins.multiverse.external.jetbrains.annotations.NotNull;
@@ -21,7 +22,7 @@ import org.mvplugins.multiverse.portals.event.MVPortalEvent;
 import org.mvplugins.multiverse.portals.utils.PortalManager;
 
 @Service
-final class MVPPortalListener implements PortalsListener {
+final class MVPPlayerPortalListener implements PortalsListener {
 
     private final PortalManager portalManager;
     private final PortalsConfig portalsConfig;
@@ -32,13 +33,13 @@ final class MVPPortalListener implements PortalsListener {
     private final AsyncSafetyTeleporter teleporter;
 
     @Inject
-    MVPPortalListener(@NotNull PortalManager portalManager,
-                      @NotNull PortalsConfig portalsConfig,
-                      @NotNull BlockSafety blockSafety,
-                      @NotNull WorldManager worldManager,
-                      @NotNull MultiversePortals plugin,
-                      @NotNull PlayerListenerHelper helper,
-                      @NotNull AsyncSafetyTeleporter teleporter) {
+    MVPPlayerPortalListener(@NotNull PortalManager portalManager,
+                            @NotNull PortalsConfig portalsConfig,
+                            @NotNull BlockSafety blockSafety,
+                            @NotNull WorldManager worldManager,
+                            @NotNull MultiversePortals plugin,
+                            @NotNull PlayerListenerHelper helper,
+                            @NotNull AsyncSafetyTeleporter teleporter) {
         this.portalManager = portalManager;
         this.portalsConfig = portalsConfig;
         this.blockSafety = blockSafety;
@@ -48,12 +49,8 @@ final class MVPPortalListener implements PortalsListener {
         this.teleporter = teleporter;
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     void playerPortal(PlayerPortalEvent event) {
-        if (event.isCancelled()) {
-            Logging.fine("This Portal event was already cancelled.");
-            return;
-        }
         Logging.finer("onPlayerPortal called!");
         Player player = event.getPlayer();
         Location playerPortalLoc = player.getLocation();
@@ -109,7 +106,6 @@ final class MVPPortalListener implements PortalsListener {
         if (portal.getCheckDestinationSafety() && portalDest.checkTeleportSafety()) {
             Location safeLocation = blockSafety.findSafeSpawnLocation(portalDest.getLocation(player).getOrNull());
             if (safeLocation == null) {
-                event.setCancelled(true);
                 Logging.warning("Portal " + portal.getName() + " destination is not safe!");
                 player.sendMessage(ChatColor.RED + "Portal " + portal.getName() + " destination is not safe!");
                 return;
@@ -138,7 +134,9 @@ final class MVPPortalListener implements PortalsListener {
             helper.payPortalEntryFee(portal, player);
         }
 
-        teleporter.to(destLocation).teleportSingle(player)
+        teleporter.to(destLocation)
+                .passengerMode(portal.getTeleportNonPlayers() ? PassengerModes.RETAIN_ALL : PassengerModes.DISMOUNT_VEHICLE)
+                .teleportSingle(player)
                 .onFailure(() -> Logging.warning("Could not teleport to destination!"));
     }
 }

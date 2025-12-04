@@ -1,17 +1,12 @@
 package org.mvplugins.multiverse.portals.listeners;
 
-import java.util.Date;
-
 import com.dumptruckman.minecraft.util.Logging;
 import org.bukkit.Material;
-import org.mvplugins.multiverse.core.destination.DestinationInstance;
 import org.mvplugins.multiverse.core.economy.MVEconomist;
-import org.mvplugins.multiverse.core.teleportation.AsyncSafetyTeleporter;
 import org.mvplugins.multiverse.external.jakarta.inject.Inject;
 import org.mvplugins.multiverse.external.jetbrains.annotations.NotNull;
 import org.jvnet.hk2.annotations.Service;
 import org.mvplugins.multiverse.portals.MVPortal;
-import org.mvplugins.multiverse.portals.PortalPlayerSession;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.mvplugins.multiverse.portals.config.PortalsConfig;
@@ -19,17 +14,21 @@ import org.mvplugins.multiverse.portals.config.PortalsConfig;
 @Service
 final class PlayerListenerHelper {
 
-    private final AsyncSafetyTeleporter safetyTeleporter;
     private final PortalsConfig portalsConfig;
     private final MVEconomist economist;
 
     @Inject
-    PlayerListenerHelper(@NotNull AsyncSafetyTeleporter safetyTeleporter,
-                         @NotNull PortalsConfig portalsConfig,
+    PlayerListenerHelper(@NotNull PortalsConfig portalsConfig,
                          @NotNull MVEconomist economist) {
-        this.safetyTeleporter = safetyTeleporter;
         this.portalsConfig = portalsConfig;
         this.economist = economist;
+    }
+
+    boolean isWithinSameBlock(Location from, Location to) {
+        return from.getWorld() == to.getWorld()
+                && from.getBlockX() == to.getBlockX()
+                && from.getBlockY() == to.getBlockY()
+                && from.getBlockZ() == to.getBlockZ();
     }
 
     void stateSuccess(String playerName, String worldName) {
@@ -70,21 +69,6 @@ final class PlayerListenerHelper {
 
     void payPortalEntryFee(MVPortal portal, Player player) {
         economist.payEntryFee(player, portal.getPrice(), portal.getCurrency());
-    }
-
-    void performTeleport(Player player, Location to, PortalPlayerSession ps, DestinationInstance<?, ?> destination, boolean checkSafety) {
-        safetyTeleporter.to(destination)
-                .checkSafety(checkSafety && destination.checkTeleportSafety())
-                .teleportSingle(player)
-                .onSuccess(() -> {
-                    ps.playerDidTeleport(to);
-                    ps.setTeleportTime(new Date());
-                    this.stateSuccess(player.getDisplayName(), destination.toString());
-                })
-                .onFailure(reason -> Logging.fine(
-                        "Failed to teleport player '%s' to destination '%s'. Reason: %s",
-                        player.getDisplayName(), destination, reason)
-                );
     }
 
     enum PortalUseResult {

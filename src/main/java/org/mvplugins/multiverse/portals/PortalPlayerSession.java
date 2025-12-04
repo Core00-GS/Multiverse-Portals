@@ -10,6 +10,7 @@ package org.mvplugins.multiverse.portals;
 import java.util.Date;
 
 import com.dumptruckman.minecraft.util.Logging;
+import org.bukkit.entity.LivingEntity;
 import org.mvplugins.multiverse.core.economy.MVEconomist;
 import org.mvplugins.multiverse.core.world.LoadedMultiverseWorld;
 import org.mvplugins.multiverse.core.world.WorldManager;
@@ -30,7 +31,6 @@ public class PortalPlayerSession {
     private final PortalManager portalManager;
     private final WorldManager worldManager;
     private final DisplayUtils displayUtils;
-    private final MVEconomist economist;
     private final Player player;
 
     private MVPortal portalSelection = null;
@@ -51,7 +51,6 @@ public class PortalPlayerSession {
         this.portalManager = plugin.getServiceLocator().getService(PortalManager.class);
         this.worldManager = plugin.getServiceLocator().getService(WorldManager.class);
         this.displayUtils = plugin.getServiceLocator().getService(DisplayUtils.class);
-        this.economist = plugin.getServiceLocator().getService(MVEconomist.class);
         this.player = p;
         this.setLocation(p.getLocation());
         this.lastTeleportTime = new Date(new Date().getTime() - this.portalsConfig.getPortalCooldown());
@@ -107,7 +106,7 @@ public class PortalPlayerSession {
     }
 
     public boolean doTeleportPlayer(MoveType eventType) {
-        if (eventType == MoveType.PLAYER_MOVE && this.player.isInsideVehicle()) {
+        if (eventType == MoveType.PLAYER_MOVE && shouldLetVehicleHandle()) {
             return false;
         }
         return this.hasMovedOutOfPortal && this.standingIn != null;
@@ -122,7 +121,7 @@ public class PortalPlayerSession {
             // This should never happen, but seems to when someone gets kicked.
             return;
         }
-        if (this.player.isInsideVehicle() && moveType != MoveType.VEHICLE_MOVE) {
+        if (shouldLetVehicleHandle() && moveType != MoveType.VEHICLE_MOVE) {
             return;
         }
         // If the player has not moved, they have a stale location
@@ -134,6 +133,10 @@ public class PortalPlayerSession {
             // The location is no longer stale.
             this.setStaleLocation(false);
         }
+    }
+
+    private boolean shouldLetVehicleHandle() {
+        return this.player.isInsideVehicle() && !(this.player.getVehicle() instanceof LivingEntity);
     }
 
     public boolean setLeftClickSelection(Vector v, LoadedMultiverseWorld world) {
