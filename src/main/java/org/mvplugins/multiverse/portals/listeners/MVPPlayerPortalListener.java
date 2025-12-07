@@ -7,10 +7,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerPortalEvent;
 import org.jvnet.hk2.annotations.Service;
-import org.mvplugins.multiverse.core.destination.DestinationInstance;
-import org.mvplugins.multiverse.core.teleportation.AsyncSafetyTeleporter;
 import org.mvplugins.multiverse.core.teleportation.BlockSafety;
-import org.mvplugins.multiverse.core.teleportation.PassengerModes;
 import org.mvplugins.multiverse.core.world.WorldManager;
 import org.mvplugins.multiverse.external.jakarta.inject.Inject;
 import org.mvplugins.multiverse.external.jetbrains.annotations.NotNull;
@@ -18,6 +15,7 @@ import org.mvplugins.multiverse.portals.MVPortal;
 import org.mvplugins.multiverse.portals.MultiversePortals;
 import org.mvplugins.multiverse.portals.PortalPlayerSession;
 import org.mvplugins.multiverse.portals.config.PortalsConfig;
+import org.mvplugins.multiverse.portals.enums.MoveType;
 import org.mvplugins.multiverse.portals.event.MVPortalEvent;
 import org.mvplugins.multiverse.portals.utils.PortalManager;
 
@@ -27,21 +25,18 @@ final class MVPPlayerPortalListener implements PortalsListener {
     private final PortalManager portalManager;
     private final PortalsConfig portalsConfig;
     private final BlockSafety blockSafety;
-    private final WorldManager worldManager;
     private final MultiversePortals plugin;
-    private final PlayerListenerHelper helper;
+    private final PortalListenerHelper helper;
 
     @Inject
     MVPPlayerPortalListener(@NotNull PortalManager portalManager,
                             @NotNull PortalsConfig portalsConfig,
                             @NotNull BlockSafety blockSafety,
-                            @NotNull WorldManager worldManager,
                             @NotNull MultiversePortals plugin,
-                            @NotNull PlayerListenerHelper helper) {
+                            @NotNull PortalListenerHelper helper) {
         this.portalManager = portalManager;
         this.portalsConfig = portalsConfig;
         this.blockSafety = blockSafety;
-        this.worldManager = worldManager;
         this.plugin = plugin;
         this.helper = helper;
     }
@@ -75,15 +70,21 @@ final class MVPPlayerPortalListener implements PortalsListener {
 
         if (!portal.isFrameValid(playerPortalLoc)) {
             player.sendMessage("This portal's frame is made of an " + ChatColor.RED + "incorrect material." + ChatColor.RED + " You should exit it now.");
+            event.setCancelled(true);
             return;
         }
 
         PortalPlayerSession ps = this.plugin.getPortalSession(player);
+        ps.setStaleLocation(playerPortalLoc, MoveType.PLAYER_MOVE);
+        if (ps.showDebugInfo()) {
+            event.setCancelled(true);
+            return;
+        }
         if (ps.checkAndSendCooldownMessage()) {
             Logging.fine("Player denied teleportation due to cooldown.");
             return;
         }
-        PlayerListenerHelper.PortalUseResult portalUseResult = helper.checkPlayerCanUsePortal(portal, player);
+        PortalListenerHelper.PortalUseResult portalUseResult = helper.checkPlayerCanUsePortal(portal, player);
         if (!portalUseResult.canUse()) {
             return;
         }
@@ -100,7 +101,10 @@ final class MVPPlayerPortalListener implements PortalsListener {
         }
 
         Logging.fine("[PlayerPortalEvent] Portal action for player: " + player);
+        helper.stateSuccess(player.getDisplayName(), portal.getName());
         portal.runActionFor(player)
-                .onSuccess(() -> event.setCancelled(true));
+                .onSuccess(() -> {
+                    event.setCancelled(true);
+                });
     }
 }

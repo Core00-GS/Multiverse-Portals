@@ -12,13 +12,13 @@ import org.bukkit.entity.Player;
 import org.mvplugins.multiverse.portals.config.PortalsConfig;
 
 @Service
-final class PlayerListenerHelper {
+final class PortalListenerHelper {
 
     private final PortalsConfig portalsConfig;
     private final MVEconomist economist;
 
     @Inject
-    PlayerListenerHelper(@NotNull PortalsConfig portalsConfig,
+    PortalListenerHelper(@NotNull PortalsConfig portalsConfig,
                          @NotNull MVEconomist economist) {
         this.portalsConfig = portalsConfig;
         this.economist = economist;
@@ -31,10 +31,10 @@ final class PlayerListenerHelper {
                 && from.getBlockZ() == to.getBlockZ();
     }
 
-    void stateSuccess(String playerName, String worldName) {
+    void stateSuccess(String playerName, String portalName) {
         Logging.fine(String.format(
                 "MV-Portals is allowing Player '%s' to use the portal '%s'.",
-                playerName, worldName));
+                playerName, portalName));
     }
 
     void stateFailure(String playerName, String portalName) {
@@ -62,6 +62,7 @@ final class PlayerListenerHelper {
         if (price > 0D && !economist.isPlayerWealthyEnough(player, price, currency)) {
             player.sendMessage(economist.getNSFMessage(currency,
                     "You need " + economist.formatPrice(price, currency) + " to enter the " + portal.getName() + " portal."));
+            stateFailure(player.getDisplayName(), portal.getName());
             return PortalUseResult.CANNOT_USE;
         }
         return PortalUseResult.PAID_USE;

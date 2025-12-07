@@ -1,4 +1,4 @@
-package org.mvplugins.multiverse.portals.utils;
+package org.mvplugins.multiverse.portals.action.types;
 
 import com.dumptruckman.minecraft.util.Logging;
 import com.google.common.io.ByteArrayDataInput;
@@ -16,12 +16,12 @@ import org.jvnet.hk2.annotations.Service;
 import org.mvplugins.multiverse.external.jakarta.inject.Inject;
 import org.mvplugins.multiverse.portals.MultiversePortals;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-@ApiStatus.Internal
 @Service
-public final class BungeeServerList implements Listener, PluginMessageListener {
+final class BungeeServerList implements Listener, PluginMessageListener {
 
     @NotNull
     private final MultiversePortals plugin;
@@ -36,7 +36,7 @@ public final class BungeeServerList implements Listener, PluginMessageListener {
         Bukkit.getMessenger().registerIncomingPluginChannel(plugin, "BungeeCord", this);
     }
 
-    public List<String> getServerNames() {
+    Collection<String> getServerNames() {
         return serverNames;
     }
 
@@ -56,7 +56,7 @@ public final class BungeeServerList implements Listener, PluginMessageListener {
     }
 
     @EventHandler
-    private void playerJoin(PlayerJoinEvent event) {
+    void playerJoin(PlayerJoinEvent event) {
         if (didFirstRun) {
             return;
         }

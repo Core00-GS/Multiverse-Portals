@@ -6,13 +6,11 @@ import org.mvplugins.multiverse.core.MultiverseCoreApi;
 import org.mvplugins.multiverse.core.config.node.ConfigNode;
 import org.mvplugins.multiverse.core.config.node.Node;
 import org.mvplugins.multiverse.core.config.node.NodeGroup;
-import org.mvplugins.multiverse.core.config.node.serializer.NodeSerializer;
 import org.mvplugins.multiverse.core.destination.DestinationsProvider;
 import org.mvplugins.multiverse.core.exceptions.MultiverseException;
 import org.mvplugins.multiverse.external.vavr.control.Try;
 import org.mvplugins.multiverse.portals.action.ActionHandler;
 import org.mvplugins.multiverse.portals.action.ActionHandlerProvider;
-import org.mvplugins.multiverse.portals.action.ActionHandlerType;
 import org.mvplugins.multiverse.portals.utils.MultiverseRegion;
 
 import java.util.Collections;
@@ -24,13 +22,11 @@ final class MVPortalNodes {
 
     private MultiversePortals plugin;
     private MVPortal portal;
-    private DestinationsProvider destinationsProvider;
     private ActionHandlerProvider actionHandlerProvider;
 
     MVPortalNodes(MultiversePortals plugin, MVPortal portal) {
         this.plugin = plugin;
         this.portal = portal;
-        this.destinationsProvider = MultiverseCoreApi.get().getDestinationsProvider();
         this.actionHandlerProvider = plugin.getServiceLocator().getService(ActionHandlerProvider.class);
     }
 
@@ -96,7 +92,7 @@ final class MVPortalNodes {
             .build());
 
     final ConfigNode<String> actionType = node(ConfigNode.builder("action-type", String.class)
-            .suggester(input -> actionHandlerProvider.getAllHandlerTypes())
+            .suggester(input -> actionHandlerProvider.getAllHandlerTypeNames())
             .defaultValue("multiverse-destination")
             .build());
 
@@ -106,6 +102,12 @@ final class MVPortalNodes {
             .suggester((sender, input) -> actionHandlerProvider.getHandlerType(portal.getActionType())
                     .map(actionHandlerType -> actionHandlerType.suggestActions(sender, input))
                     .getOrElse(Collections.emptyList()))
+            .stringParser((sender, input, type) ->
+                    Try.of(() -> actionHandlerProvider.getHandlerType(portal.getActionType())
+                            .mapAttempt(actionHandlerType -> actionHandlerType.parseHandler(sender, input))
+                            .map(ActionHandler::serialise)
+                            .getOrThrow(failure ->
+                                    new MultiverseException(failure.getFailureMessage()))))
             .build());
 
     final ConfigNode<Boolean> checkDestinationSafety = node(ConfigNode.builder("check-destination-safety", Boolean.class)

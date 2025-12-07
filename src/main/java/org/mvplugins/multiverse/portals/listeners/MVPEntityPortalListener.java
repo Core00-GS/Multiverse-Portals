@@ -7,15 +7,11 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityPortalEvent;
 import org.jvnet.hk2.annotations.Service;
-import org.mvplugins.multiverse.core.destination.DestinationInstance;
-import org.mvplugins.multiverse.core.teleportation.AsyncSafetyTeleporter;
 import org.mvplugins.multiverse.core.teleportation.BlockSafety;
-import org.mvplugins.multiverse.core.teleportation.PassengerModes;
 import org.mvplugins.multiverse.external.jakarta.inject.Inject;
 import org.mvplugins.multiverse.external.jetbrains.annotations.NotNull;
 import org.mvplugins.multiverse.portals.MVPortal;
 import org.mvplugins.multiverse.portals.config.PortalsConfig;
-import org.mvplugins.multiverse.portals.event.MVPortalEvent;
 import org.mvplugins.multiverse.portals.utils.PortalManager;
 
 @Service
@@ -24,14 +20,17 @@ public final class MVPEntityPortalListener implements Listener {
     private final PortalManager portalManager;
     private final PortalsConfig portalsConfig;
     private final BlockSafety blockSafety;
+    private final PortalListenerHelper helper;
 
     @Inject
     MVPEntityPortalListener(@NotNull PortalManager portalManager,
                             @NotNull PortalsConfig portalsConfig,
-                            @NotNull BlockSafety blockSafety) {
+                            @NotNull BlockSafety blockSafety,
+                            @NotNull PortalListenerHelper helper) {
         this.portalManager = portalManager;
         this.portalsConfig = portalsConfig;
         this.blockSafety = blockSafety;
+        this.helper = helper;
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -60,6 +59,7 @@ public final class MVPEntityPortalListener implements Listener {
         }
 
         Logging.fine("[EntityPortalEvent] Portal action for entity: " + entity);
+        helper.stateSuccess(entity.getName(), portal.getName());
         portal.runActionFor(entity)
                 .onSuccess(() -> event.setCancelled(true));
     }

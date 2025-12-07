@@ -252,17 +252,14 @@ public class PortalPlayerSession {
         }
 
         displayUtils.showStaticInfo(this.player, this.standingIn, "You are currently standing in ");
-        displayUtils.showPortalPriceInfo(this.standingIn, this.player);
         return true;
     }
 
     public boolean showDebugInfo(MVPortal portal) {
         if (portal.playerCanEnterPortal(this.player)) {
             displayUtils.showStaticInfo(this.player, portal, "Portal Info ");
-            displayUtils.showPortalPriceInfo(portal, this.player);
-        } else {
-            Logging.info("Player " + this.player.getName() + " walked through" + portal.getName() + " with debug on.");
         }
+        Logging.info("Player " + this.player.getName() + " walked through" + portal.getName() + " with debug on.");
         return true;
     }
 

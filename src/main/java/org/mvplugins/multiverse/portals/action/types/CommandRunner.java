@@ -12,23 +12,27 @@ abstract class CommandRunner {
     static CommandRunner fromString(String command) {
         String[] split = REPatterns.COLON.split(command, 2);
         return switch ((split.length == 2) ? split[0] : "") {
-            case "op" -> new Op(split[1]);
-            case "console" -> new Console(split[1]);
-            default -> new Self(command);
+            case "op" -> new Op(command, split[1]);
+            case "console" -> new Console(command, split[1]);
+            default -> new Self(command, command);
         };
     }
 
+    final String rawCmd;
     private final String cmdStr;
+    final String cmdType;
 
-    CommandRunner(String cmdStr) {
+    private CommandRunner(String rawCmd, String cmdStr, String cmdType) {
+        this.rawCmd = rawCmd;
         this.cmdStr = cmdStr;
+        this.cmdType = cmdType;
     }
 
     void runCommand(CommandSender sender) {
-        runCommand(sender, parseCmdStr(sender));
+        runCommand(sender, parseCmdStrPlaceholders(sender));
     }
 
-    private String parseCmdStr(CommandSender sender) {
+    String parseCmdStrPlaceholders(CommandSender sender) {
         String parsedCmd = cmdStr;
         if (sender instanceof Entity entity) {
             parsedCmd = parsedCmd.replace("%world%", entity.getWorld().getName());
@@ -46,8 +50,8 @@ abstract class CommandRunner {
 
     private static class Self extends CommandRunner {
 
-        private Self(String cmdStr) {
-            super(cmdStr);
+        private Self(String rawCmd, String cmdStr) {
+            super(rawCmd, cmdStr, "myself");
         }
 
         @Override
@@ -58,8 +62,8 @@ abstract class CommandRunner {
 
     private static class Op extends CommandRunner {
 
-        private Op(String cmdStr) {
-            super(cmdStr);
+        private Op(String rawCmd, String cmdStr) {
+            super(rawCmd, cmdStr, "as operator");
         }
 
         @Override
@@ -78,8 +82,8 @@ abstract class CommandRunner {
 
     private static class Console extends CommandRunner {
 
-        private Console(String cmdStr) {
-            super(cmdStr);
+        private Console(String rawCmd, String cmdStr) {
+            super(rawCmd, cmdStr, "from console");
         }
 
         @Override

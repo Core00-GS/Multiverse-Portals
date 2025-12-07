@@ -13,9 +13,7 @@ import java.util.List;
 
 import com.dumptruckman.minecraft.util.Logging;
 import org.bukkit.event.Listener;
-import org.mvplugins.multiverse.core.destination.DestinationInstance;
 import org.mvplugins.multiverse.core.teleportation.AsyncSafetyTeleporter;
-import org.mvplugins.multiverse.core.teleportation.PassengerModes;
 import org.mvplugins.multiverse.external.jakarta.inject.Inject;
 import org.mvplugins.multiverse.external.jetbrains.annotations.NotNull;
 import org.jvnet.hk2.annotations.Service;
@@ -35,19 +33,16 @@ import org.mvplugins.multiverse.portals.utils.PortalManager;
 public final class MVPVehicleListener implements Listener {
     private final MultiversePortals plugin;
     private final PortalManager portalManager;
-    private final AsyncSafetyTeleporter safetyTeleporter;
-    private final PlayerListenerHelper helper;
+    private final PortalListenerHelper helper;
 
     @Inject
     MVPVehicleListener(
             @NotNull MultiversePortals plugin,
             @NotNull PortalManager portalManager,
-            @NotNull AsyncSafetyTeleporter safetyTeleporter,
-            @NotNull PlayerListenerHelper helper
+            @NotNull PortalListenerHelper helper
     ) {
         this.plugin = plugin;
         this.portalManager = portalManager;
-        this.safetyTeleporter = safetyTeleporter;
         this.helper = helper;
     }
 
@@ -91,7 +86,7 @@ public final class MVPVehicleListener implements Listener {
         }
 
         for (Player player : playerPassengers) {
-            PlayerListenerHelper.PortalUseResult portalUseResult = helper.checkPlayerCanUsePortal(portal, player);
+            PortalListenerHelper.PortalUseResult portalUseResult = helper.checkPlayerCanUsePortal(portal, player);
             if (!portalUseResult.canUse()) {
                 Logging.finer("Player %s is not allowed to use portal %s, removing them from the vehicle.",
                         player.getName(), portal.getName());
@@ -103,6 +98,7 @@ public final class MVPVehicleListener implements Listener {
         }
 
         Logging.fine("[VehicleMoveEvent] Portal action for vehicle: " + vehicle);
+        helper.stateSuccess(vehicle.getName(), portal.getName());
         portal.runActionFor(vehicle)
                 .onSuccess(() -> playerPassengers.forEach(player ->
                         plugin.getPortalSession(player).setTeleportTime(new Date())));

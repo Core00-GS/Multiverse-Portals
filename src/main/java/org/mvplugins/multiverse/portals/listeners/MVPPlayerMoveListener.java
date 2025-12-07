@@ -9,10 +9,6 @@ package org.mvplugins.multiverse.portals.listeners;
 
 import com.dumptruckman.minecraft.util.Logging;
 import org.bukkit.event.Listener;
-import org.mvplugins.multiverse.core.destination.DestinationInstance;
-import org.mvplugins.multiverse.core.teleportation.AsyncSafetyTeleporter;
-import org.mvplugins.multiverse.core.teleportation.PassengerModes;
-import org.mvplugins.multiverse.core.world.WorldManager;
 import org.mvplugins.multiverse.external.jakarta.inject.Inject;
 import org.mvplugins.multiverse.external.jetbrains.annotations.NotNull;
 import org.jvnet.hk2.annotations.Service;
@@ -29,20 +25,18 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerMoveEvent;
 
-import java.util.Date;
-
 @Service
 public final class MVPPlayerMoveListener implements Listener {
 
     private final MultiversePortals plugin;
     private final PortalsConfig portalsConfig;
-    private final PlayerListenerHelper helper;
+    private final PortalListenerHelper helper;
 
     @Inject
     MVPPlayerMoveListener(
             @NotNull MultiversePortals plugin,
             @NotNull PortalsConfig portalsConfig,
-            @NotNull PlayerListenerHelper helper) {
+            @NotNull PortalListenerHelper helper) {
         this.plugin = plugin;
         this.portalsConfig = portalsConfig;
         this.helper = helper;
@@ -81,15 +75,8 @@ public final class MVPPlayerMoveListener implements Listener {
             return;
         }
 
-        PlayerListenerHelper.PortalUseResult portalUseResult = helper.checkPlayerCanUsePortal(portal, player);
+        PortalListenerHelper.PortalUseResult portalUseResult = helper.checkPlayerCanUsePortal(portal, player);
         if (!portalUseResult.canUse()) {
-            return;
-        }
-
-        // If they're using Access and they don't have permission and they're NOT excempt, return, they're not allowed to tp.
-        // No longer checking exemption status
-        if (portalsConfig.getEnforcePortalAccess() && !event.getPlayer().hasPermission(portal.getPermission())) {
-            this.helper.stateFailure(player.getDisplayName(), portal.getName());
             return;
         }
 

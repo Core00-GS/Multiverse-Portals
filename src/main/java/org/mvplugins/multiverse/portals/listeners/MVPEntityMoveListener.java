@@ -7,9 +7,6 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.jvnet.hk2.annotations.Service;
-import org.mvplugins.multiverse.core.destination.DestinationInstance;
-import org.mvplugins.multiverse.core.teleportation.AsyncSafetyTeleporter;
-import org.mvplugins.multiverse.core.teleportation.PassengerModes;
 import org.mvplugins.multiverse.external.jakarta.inject.Inject;
 import org.mvplugins.multiverse.external.jetbrains.annotations.NotNull;
 import org.mvplugins.multiverse.portals.MVPortal;
@@ -19,12 +16,12 @@ import org.mvplugins.multiverse.portals.utils.PortalManager;
 @Service
 public final class MVPEntityMoveListener implements Listener {
 
-    private final PlayerListenerHelper helper;
+    private final PortalListenerHelper helper;
     private final PortalManager portalManager;
     private final PortalsConfig portalsConfig;
 
     @Inject
-    MVPEntityMoveListener(@NotNull PlayerListenerHelper helper,
+    MVPEntityMoveListener(@NotNull PortalListenerHelper helper,
                           @NotNull PortalManager portalManager,
                           @NotNull PortalsConfig portalsConfig) {
         this.helper = helper;
@@ -48,6 +45,8 @@ public final class MVPEntityMoveListener implements Listener {
             return;
         }
 
+        Logging.fine("[EntityMoveEvent] Portal action for entity: " + entity);
+        helper.stateSuccess(entity.getName(), portal.getName());
         portal.runActionFor(entity);
     }
 }

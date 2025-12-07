@@ -1,51 +1,80 @@
 package org.mvplugins.multiverse.portals.utils;
 
+import org.bukkit.entity.Entity;
+import org.mvplugins.multiverse.core.command.MVCommandIssuer;
+import org.mvplugins.multiverse.core.command.MVCommandManager;
 import org.mvplugins.multiverse.core.economy.MVEconomist;
+import org.mvplugins.multiverse.core.locale.message.Message;
+import org.mvplugins.multiverse.core.utils.result.Attempt;
 import org.mvplugins.multiverse.core.world.MultiverseWorld;
 import org.mvplugins.multiverse.core.world.WorldManager;
 import org.mvplugins.multiverse.external.jakarta.inject.Inject;
+import org.mvplugins.multiverse.external.jetbrains.annotations.ApiStatus;
 import org.mvplugins.multiverse.external.jetbrains.annotations.NotNull;
 import org.jvnet.hk2.annotations.Service;
 import org.mvplugins.multiverse.portals.MVPortal;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
+import org.mvplugins.multiverse.portals.action.ActionFailureReason;
+import org.mvplugins.multiverse.portals.action.ActionHandler;
+
+import static org.mvplugins.multiverse.core.locale.message.MessageReplacement.replace;
 
 @Service
 public class DisplayUtils {
 
     private final WorldManager worldManager;
     private final MVEconomist economist;
+    private final MVCommandManager commandManager;
 
     @Inject
     DisplayUtils(
             @NotNull WorldManager worldManager,
-            @NotNull MVEconomist economist) {
+            @NotNull MVEconomist economist,
+            @NotNull MVCommandManager commandManager) {
         this.worldManager = worldManager;
         this.economist = economist;
+        this.commandManager = commandManager;
     }
 
     public void showStaticInfo(CommandSender sender, MVPortal portal, String message) {
-        sender.sendMessage(ChatColor.AQUA + "--- " + message + ChatColor.DARK_AQUA + portal.getName() + ChatColor.AQUA + " ---");
+        MVCommandIssuer issuer = commandManager.getCommandIssuer(sender);
+
+        issuer.sendMessage(ChatColor.AQUA + "--- " + message + ChatColor.DARK_AQUA + portal.getName() + ChatColor.AQUA + " ---");
         String[] locParts = portal.getPortalLocation().toString().split(":");
-        sender.sendMessage("Coords: " + ChatColor.GOLD + locParts[1] + ChatColor.WHITE + " to " + ChatColor.GOLD + locParts[2] + ChatColor.WHITE + " in " + ChatColor.GOLD + portal.getWorld().getName() );
-        sender.sendMessage("Action Type: " + ChatColor.GOLD + portal.getActionType());
+        issuer.sendMessage(ChatColor.WHITE + "Coords: " + ChatColor.GOLD + locParts[1] + ChatColor.WHITE + " to " + ChatColor.GOLD + locParts[2] + ChatColor.WHITE + " in " + ChatColor.GOLD + portal.getWorld().getName() );
+        issuer.sendMessage(ChatColor.WHITE + "Configured Action Type: " + ChatColor.GOLD + portal.getActionType());
         if (portal.getAction().isEmpty()) {
-            sender.sendMessage("Action: " + ChatColor.RED + ChatColor.ITALIC + "NOT SET!");
-            return;
-        }
-        if (portal.getActionType().equalsIgnoreCase("multiverse-destination")) {
-            sender.sendMessage("Action: " + ChatColor.GOLD + formatActionAsMVDestination(portal));
+            issuer.sendMessage(ChatColor.WHITE + "Configured Action: " + ChatColor.RED + ChatColor.ITALIC + "NOT SET!");
         } else {
-            sender.sendMessage("Action: " + ChatColor.GOLD + portal.getAction());
+            issuer.sendMessage(ChatColor.WHITE + "Configured Action: " + ChatColor.GOLD + portal.getAction());
         }
-        sender.sendMessage("Check Destination Safety: " + formatBoolean(portal.getCheckDestinationSafety()));
-        sender.sendMessage("Teleport Non Players: " + formatBoolean(portal.getTeleportNonPlayers()));
+        Attempt<? extends ActionHandler<?, ?>, ActionFailureReason> actionHandler = portal.getActionHandler();
+
+        issuer.sendMessage(ChatColor.WHITE + "Check Destination Safety: " + formatBoolean(portal.getCheckDestinationSafety()));
+        issuer.sendMessage(ChatColor.WHITE + "Teleport Non Players: " + formatBoolean(portal.getTeleportNonPlayers()));
+        showPortalPriceInfo(portal, sender);
+
+        if (sender instanceof Entity entity) {
+            actionHandler.map(handler -> handler.actionDescription(entity))
+                    .onSuccess(actionMessage -> {
+                        issuer.sendMessage("");
+                        issuer.sendMessage(Message.of(ChatColor.WHITE + "Your action when using Portal: {action}",
+                                replace("{action}").with(actionMessage)));
+                    });
+        }
+
+        actionHandler.onFailure(failure -> {
+            issuer.sendMessage("");
+            issuer.sendError(failure.getFailureMessage());
+        });
     }
 
     private String formatBoolean(Boolean bool) {
         return bool ? ChatColor.GREEN + "true" : ChatColor.RED + "false";
     }
 
+    @ApiStatus.AvailableSince("5.2")
     public String formatActionAsMVDestination(MVPortal portal) {
         String[] split = portal.getAction().split(":", 2);
         String destination = split.length == 2 ? split[1] : "";

@@ -68,10 +68,17 @@ class ModifyCommand extends PortalsCommand {
         var stringPropertyHandle = portal.getStringPropertyHandle();
         stringPropertyHandle.setPropertyString(issuer.getIssuer(), property, value)
                 .onSuccess(ignore -> {
-                    this.plugin.savePortalsConfig();
+                    if (!this.plugin.savePortalsConfig()) {
+                        issuer.sendError("Could not save portals configuration file!");
+                        return;
+                    }
                     issuer.sendMessage(ChatColor.GREEN + "Property " + ChatColor.AQUA + property + ChatColor.GREEN
                             + " of Portal " + ChatColor.YELLOW + portal.getName() + ChatColor.GREEN + " was set to "
                             + ChatColor.AQUA + stringPropertyHandle.getProperty(property).getOrNull());
+                    if (property.equalsIgnoreCase("action-type")) {
+                        issuer.sendError("Please note that changing the action type &edoes NOT modify &cthe action itself. "
+                                + "You need to modify the action property as well to ensure the portal works as expected.");
+                    }
                 }).onFailure(failure -> {
                     issuer.sendError("Property " + ChatColor.AQUA + property + ChatColor.RED + " of Portal "
                             + ChatColor.YELLOW + portal.getName() + ChatColor.RED + " was NOT set to "

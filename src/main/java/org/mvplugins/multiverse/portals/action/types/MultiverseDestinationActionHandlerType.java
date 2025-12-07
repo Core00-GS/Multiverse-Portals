@@ -3,6 +3,7 @@ package org.mvplugins.multiverse.portals.action.types;
 import org.bukkit.command.CommandSender;
 import org.jvnet.hk2.annotations.Service;
 import org.mvplugins.multiverse.core.destination.DestinationsProvider;
+import org.mvplugins.multiverse.core.locale.message.Message;
 import org.mvplugins.multiverse.core.teleportation.AsyncSafetyTeleporter;
 import org.mvplugins.multiverse.core.utils.result.Attempt;
 import org.mvplugins.multiverse.external.jakarta.inject.Inject;
@@ -27,15 +28,19 @@ final class MultiverseDestinationActionHandlerType extends ActionHandlerType<Mul
     }
 
     @Override
-    public Attempt<MultiverseDestinationActionHandler, ActionFailureReason> parseHandler(String action) {
-        return destinationsProvider.parseDestination(action)
+    public @NotNull Attempt<MultiverseDestinationActionHandler, ActionFailureReason> parseHandler(@NotNull CommandSender sender,
+                                                                                                  @NotNull String action) {
+        if (action.isEmpty()) {
+            return Attempt.failure(ActionFailureReason.INSTANCE, Message.of("Please specific a multiverse destination as the portal's action."));
+        }
+        return destinationsProvider.parseDestination(sender, action)
                 .transform(ActionFailureReason.INSTANCE)
                 .map(destinationInstance ->
                         new MultiverseDestinationActionHandler(this, teleporter, destinationInstance));
     }
 
     @Override
-    public Collection<String> suggestActions(CommandSender sender, String input) {
+    public @NotNull Collection<String> suggestActions(@NotNull CommandSender sender, @NotNull String input) {
         return destinationsProvider.suggestDestinationStrings(sender, input);
     }
 }
