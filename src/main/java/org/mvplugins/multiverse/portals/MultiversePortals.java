@@ -84,13 +84,13 @@ public class MultiversePortals extends MultiverseModule {
     @Override
     public void onLoad() {
         super.onLoad();
+        Logging.init(this);
         getDataFolder().mkdirs();
     }
 
     @Override
     public void onEnable() {
         super.onEnable();
-        Logging.init(this);
 
         initializeDependencyInjection(new MultiversePortalsPluginBinder(this));
 
@@ -122,7 +122,8 @@ public class MultiversePortals extends MultiverseModule {
         // for teleporting between servers
         getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
 
-        Logging.log(true, Level.INFO, " Enabled - By %s", StringFormatter.joinAnd(getDescription().getAuthors()));
+        Logging.config("Version %s (API v%s) Enabled - By %s",
+                this.getDescription().getVersion(), getVersionAsNumber(), StringFormatter.joinAnd(this.getDescription().getAuthors()));
     }
 
     @Override
@@ -130,6 +131,8 @@ public class MultiversePortals extends MultiverseModule {
         this.savePortalsConfig();
         MultiversePortalsApi.shutdown();
         shutdownDependencyInjection();
+        Logging.info("- Disabled");
+        Logging.shutdown();
     }
 
     private boolean setupConfig() {
