@@ -5,7 +5,6 @@ import org.bukkit.command.CommandSender;
 import org.mvplugins.multiverse.core.command.LegacyAliasCommand;
 import org.mvplugins.multiverse.core.world.MultiverseWorld;
 import org.mvplugins.multiverse.core.world.WorldManager;
-import org.mvplugins.multiverse.core.command.MVCommandManager;
 import org.mvplugins.multiverse.external.acf.commands.annotation.CommandAlias;
 import org.mvplugins.multiverse.external.acf.commands.annotation.CommandCompletion;
 import org.mvplugins.multiverse.external.acf.commands.annotation.CommandPermission;
@@ -18,6 +17,7 @@ import org.mvplugins.multiverse.external.jakarta.inject.Inject;
 import org.mvplugins.multiverse.external.jetbrains.annotations.NotNull;
 import org.jvnet.hk2.annotations.Service;
 import org.mvplugins.multiverse.portals.MVPortal;
+import org.mvplugins.multiverse.portals.utils.DisplayUtils;
 import org.mvplugins.multiverse.portals.utils.PortalManager;
 
 import java.util.ArrayList;
@@ -30,11 +30,13 @@ class ListCommand extends PortalsCommand {
 
     private final PortalManager portalManager;
     private final WorldManager worldManager;
+    private final DisplayUtils displayUtils;
 
     @Inject
-    ListCommand(@NotNull PortalManager portalManager, @NotNull WorldManager worldManager) {
+    ListCommand(@NotNull PortalManager portalManager, @NotNull WorldManager worldManager, @NotNull DisplayUtils displayUtils) {
         this.portalManager = portalManager;
         this.worldManager = worldManager;
+        this.displayUtils = displayUtils;
     }
 
     @Subcommand("list")
@@ -91,43 +93,9 @@ class ListCommand extends PortalsCommand {
             filter = "";
         }
         for (MVPortal portal : (world == null) ? this.portalManager.getPortals(sender) : this.portalManager.getPortals(sender, world)) {
-            String destination = "";
-            if (portal.getDestination() != null) {
-                destination = portal.getDestination().toString();
-                String destType = portal.getDestination().getIdentifier();
-                if (destType.equals("w")) {
-                    MultiverseWorld destWorld = this.worldManager.getLoadedWorld(destination).getOrNull();
-                    if (destWorld != null) {
-                        destination = "(World) " + ChatColor.DARK_AQUA + destination;
-                    }
-                }
-                if (destType.equals("p")) {
-                    // todo: I think should use instance check instead of destType prefix
-                    // String targetWorldName = this.portalManager.getPortal(portal.getDestination().getName()).getWorld().getName();
-                    // destination = "(Portal) " + ChatColor.DARK_AQUA + portal.getDestination().getName() + ChatColor.GRAY + " (" + targetWorldName + ")";
-                }
-                if (destType.equals("e")) {
-                    String destinationWorld = portal.getDestination().toString().split(":")[1];
-                    String destPart = portal.getDestination().toString().split(":")[2];
-                    String[] locParts = destPart.split(",");
-                    int x, y, z;
-                    try {
-                        x = (int) Double.parseDouble(locParts[0]);
-                        y = (int) Double.parseDouble(locParts[1]);
-                        z = (int) Double.parseDouble(locParts[2]);
-                    } catch (NumberFormatException e) {
-                        e.printStackTrace();
-                        continue;
-                    }
-                    if (destType.equals("i")) {
-                        destination = ChatColor.RED + "Invalid destination";
-                    }
-                    destination = "(Location) " + ChatColor.DARK_AQUA + destinationWorld + ", " + x + ", " + y + ", " + z;
-                }
-            }
-
-            if (portal.getName().toLowerCase().contains(filter.toLowerCase()) || (portal.getDestination() != null && destination.toLowerCase().contains(filter.toLowerCase()))) {
-                portals.add(ChatColor.YELLOW + portal.getName() + ((portal.getDestination() != null) ? (ChatColor.AQUA + " -> " + ChatColor.GOLD + destination) : ""));
+            String destination = displayUtils.formatActionAsMVDestination(portal);
+            if (portal.getName().toLowerCase().contains(filter.toLowerCase()) || destination.toLowerCase().contains(filter.toLowerCase())) {
+                portals.add(ChatColor.YELLOW + portal.getName() + ChatColor.AQUA + " -> " + ChatColor.GOLD + destination);
             }
         }
         java.util.Collections.sort(portals);
@@ -147,8 +115,8 @@ class ListCommand extends PortalsCommand {
     @Service
     private final static class LegacyAlias extends ListCommand implements LegacyAliasCommand {
         @Inject
-        LegacyAlias(PortalManager portalManager, WorldManager worldManager) {
-            super(portalManager, worldManager);
+        LegacyAlias(PortalManager portalManager, WorldManager worldManager, DisplayUtils displayUtils) {
+            super(portalManager, worldManager, displayUtils);
         }
 
         @Override

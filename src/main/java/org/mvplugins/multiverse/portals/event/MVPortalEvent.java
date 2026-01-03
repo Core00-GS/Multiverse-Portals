@@ -12,6 +12,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
+import org.jetbrains.annotations.ApiStatus;
 import org.mvplugins.multiverse.core.destination.DestinationInstance;
 import org.mvplugins.multiverse.portals.MVPortal;
 import org.mvplugins.multiverse.portals.enums.PortalType;
@@ -76,8 +77,12 @@ public class MVPortalEvent extends Event implements Cancellable {
     /**
      * Returns the destination that the player will spawn at.
      *
-     * @return The destination the player will spawn at.
+     * @return The destination the player will spawn at. May be null.
+     *
+     * @deprecated Portals can have different types of actions, not just destinations. See {@link org.mvplugins.multiverse.portals.action.ActionHandlerProvider}
      */
+    @Deprecated(since = "5.2", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "6.0")
     public DestinationInstance<?, ?> getDestination() {
         return this.destination;
     }

@@ -16,6 +16,8 @@ import java.util.Set;
 import java.util.logging.Level;
 
 import com.dumptruckman.minecraft.util.Logging;
+import com.google.common.io.ByteArrayDataInput;
+import com.google.common.io.ByteStreams;
 import org.jetbrains.annotations.ApiStatus;
 import org.mvplugins.multiverse.core.config.CoreConfig;
 import org.mvplugins.multiverse.core.destination.DestinationsProvider;
@@ -26,6 +28,8 @@ import org.mvplugins.multiverse.external.jakarta.inject.Inject;
 import org.mvplugins.multiverse.external.jakarta.inject.Provider;
 import org.jvnet.hk2.annotations.Service;
 import org.mvplugins.multiverse.external.vavr.control.Try;
+import org.mvplugins.multiverse.portals.action.ActionHandlerProvider;
+import org.mvplugins.multiverse.portals.action.ActionHandlerType;
 import org.mvplugins.multiverse.portals.commands.PortalsCommand;
 import org.mvplugins.multiverse.portals.command.PortalsCommandCompletions;
 import org.mvplugins.multiverse.portals.command.PortalsCommandContexts;
@@ -70,6 +74,8 @@ public class MultiversePortals extends MultiverseModule {
     private Provider<PortalsConfig> portalsConfigProvider;
     @Inject
     private Provider<BstatsMetricsConfigurator> metricsConfiguratorProvider;
+    @Inject
+    private Provider<ActionHandlerProvider> actionHandlerProvider;
 
     private FileConfiguration MVPPortalConfig;
     private WorldEditConnection worldEditConnection;
@@ -78,13 +84,13 @@ public class MultiversePortals extends MultiverseModule {
     @Override
     public void onLoad() {
         super.onLoad();
+        Logging.init(this);
         getDataFolder().mkdirs();
     }
 
     @Override
     public void onEnable() {
         super.onEnable();
-        Logging.init(this);
 
         initializeDependencyInjection(new MultiversePortalsPluginBinder(this));
 
@@ -104,6 +110,7 @@ public class MultiversePortals extends MultiverseModule {
             this.getServer().getPluginManager().disablePlugin(this);
             return;
         }
+        this.setUpActionHandlers();
         this.loadPortals();
         this.setupMetrics();
 
@@ -112,7 +119,11 @@ public class MultiversePortals extends MultiverseModule {
         getServer().getPluginManager().registerEvents(new WorldEditPluginListener(), this);
         MultiversePortalsApi.init(this);
 
-        Logging.log(true, Level.INFO, " Enabled - By %s", StringFormatter.joinAnd(getDescription().getAuthors()));
+        // for teleporting between servers
+        getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
+
+        Logging.config("Version %s (API v%s) Enabled - By %s",
+                this.getDescription().getVersion(), getVersionAsNumber(), StringFormatter.joinAnd(this.getDescription().getAuthors()));
     }
 
     @Override
@@ -120,6 +131,8 @@ public class MultiversePortals extends MultiverseModule {
         this.savePortalsConfig();
         MultiversePortalsApi.shutdown();
         shutdownDependencyInjection();
+        Logging.info("- Disabled");
+        Logging.shutdown();
     }
 
     private boolean setupConfig() {
@@ -139,8 +152,14 @@ public class MultiversePortals extends MultiverseModule {
         if (portalsConfigProvider.get().getTeleportVehicles()) {
             pluginManager.registerEvents(serviceLocator.getService(MVPVehicleListener.class), this);
         }
+        if (portalsConfigProvider.get().getTeleportEntities()) {
+            pluginManager.registerEvents(serviceLocator.getService(MVPEntityPortalListener.class), this);
+        }
         if (portalsConfigProvider.get().getUseOnMove()) {
             pluginManager.registerEvents(serviceLocator.getService(MVPPlayerMoveListener.class), this);
+            if (portalsConfigProvider.get().getTeleportEntities()) {
+                pluginManager.registerEvents(serviceLocator.getService(MVPEntityMoveListener.class), this);
+            }
         }
     }
 
@@ -172,6 +191,12 @@ public class MultiversePortals extends MultiverseModule {
      */
     public void destroyPortalSession(Player p) {
         this.portalSessions.remove(p.getName());
+    }
+
+    private void setUpActionHandlers() {
+        serviceLocator.getAllServices(ActionHandlerType.class).forEach(handler -> {
+            actionHandlerProvider.get().registerHandlerType(handler);
+        });
     }
 
     private void loadPortals() {

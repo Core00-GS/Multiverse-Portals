@@ -15,6 +15,10 @@ repositories {
         name = 'benthecat'
         url = uri('https://repo.c0ding.party/multiverse-beta')
     }
+    maven {
+        name = "helpchatRepoReleases"
+        url = uri("https://repo.helpch.at/releases/")
+    }
 }
 
 configure(apiDependencies) {
@@ -31,6 +35,9 @@ dependencies {
     externalPlugin('com.sk89q.worldedit:worldedit-bukkit:7.2.9') {
         exclude group: 'org.bukkit', module: 'bukkit'
     }
+
+    // PlaceholderAPI
+    externalPlugin 'me.clip:placeholderapi:2.11.6'
 
     // Utils
     shadowed('com.dumptruckman.minecraft:Logging:1.1.1') {

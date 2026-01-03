@@ -9,6 +9,7 @@ import org.mvplugins.multiverse.core.command.MVCommandIssuer;
 import org.mvplugins.multiverse.external.acf.commands.annotation.CommandAlias;
 import org.mvplugins.multiverse.external.acf.commands.annotation.CommandCompletion;
 import org.mvplugins.multiverse.external.acf.commands.annotation.CommandPermission;
+import org.mvplugins.multiverse.external.acf.commands.annotation.ConsumesRest;
 import org.mvplugins.multiverse.external.acf.commands.annotation.Description;
 import org.mvplugins.multiverse.external.acf.commands.annotation.Flags;
 import org.mvplugins.multiverse.external.acf.commands.annotation.Single;
@@ -49,7 +50,7 @@ class ModifyCommand extends PortalsCommand {
             @Description("The property to modify.")
             String property,
 
-            @Single
+            @ConsumesRest
             @Syntax("<value>")
             @Description("The value to set.")
             String value
@@ -67,10 +68,17 @@ class ModifyCommand extends PortalsCommand {
         var stringPropertyHandle = portal.getStringPropertyHandle();
         stringPropertyHandle.setPropertyString(issuer.getIssuer(), property, value)
                 .onSuccess(ignore -> {
-                    this.plugin.savePortalsConfig();
+                    if (!this.plugin.savePortalsConfig()) {
+                        issuer.sendError("Could not save portals configuration file!");
+                        return;
+                    }
                     issuer.sendMessage(ChatColor.GREEN + "Property " + ChatColor.AQUA + property + ChatColor.GREEN
                             + " of Portal " + ChatColor.YELLOW + portal.getName() + ChatColor.GREEN + " was set to "
                             + ChatColor.AQUA + stringPropertyHandle.getProperty(property).getOrNull());
+                    if (property.equalsIgnoreCase("action-type")) {
+                        issuer.sendError("Please note that changing the action type &edoes NOT modify &cthe action itself. "
+                                + "You need to modify the action property as well to ensure the portal works as expected.");
+                    }
                 }).onFailure(failure -> {
                     issuer.sendError("Property " + ChatColor.AQUA + property + ChatColor.RED + " of Portal "
                             + ChatColor.YELLOW + portal.getName() + ChatColor.RED + " was NOT set to "

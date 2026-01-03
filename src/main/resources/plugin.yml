@@ -4,4 +4,4 @@ authors: ['Rigby', 'fernferret', 'benwoo1110']
 version: ${version}
 api-version: 1.13
 depend: ['Multiverse-Core']
-softdepend: ['WorldEdit']
+softdepend: ['WorldEdit', 'PlaceholderAPI']
